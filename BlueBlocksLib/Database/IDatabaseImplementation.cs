@@ -4,8 +4,8 @@ using System.Text;
 
 namespace BlueBlocksLib.Database
 {
-    interface IDatabaseImplementation
+	public interface IDatabaseImplementation
     {
-        
+
     }
 }

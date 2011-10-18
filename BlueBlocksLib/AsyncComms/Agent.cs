@@ -17,7 +17,7 @@ namespace BlueBlocksLib.AsyncComms
         Thread t;
         IChannel<T> messageQueue = new MessageQueue<T>();
         Action initAction;
-        Func<T, NextAction> taskAction;
+        Func<NextAction, T> taskAction;
         Action exitAction;
 
         /// <summary>
@@ -27,7 +27,7 @@ namespace BlueBlocksLib.AsyncComms
         /// <param name="initAction"></param>
         /// <param name="exitAction"></param>
         /// <param name="taskAction"></param>
-        public Agent(Action initAction, Action exitAction, Func<T, NextAction> taskAction)
+        public Agent(Action initAction, Action exitAction, Func<NextAction, T> taskAction)
             : this()
         {
             this.initAction = initAction;
@@ -35,7 +35,7 @@ namespace BlueBlocksLib.AsyncComms
             this.exitAction = exitAction;
         }
 
-        public Agent(Action initAction, Action exitAction, Func<T, NextAction> taskAction, IChannel<T> messageQueue)
+        public Agent(Action initAction, Action exitAction, Func<NextAction, T> taskAction, IChannel<T> messageQueue)
             : this(initAction, exitAction, taskAction)
         {
             this.messageQueue = messageQueue;
@@ -58,8 +58,7 @@ namespace BlueBlocksLib.AsyncComms
                 initAction();
                 T item;
                 NextAction na = NextAction.WaitForNextMessage;
-                do
-                {
+                do {
                     item = (mq as MessageQueue<T>).Receive();
                     na = taskAction(item);
                 } while (na != NextAction.Finish);
