@@ -40,7 +40,12 @@
     <Compile Include="AsyncComms\IChannel.cs" />
     <Compile Include="AsyncComms\MessageQueue.cs" />
     <Compile Include="AsyncComms\MessageStack.cs" />
+    <Compile Include="BaseClasses\Enumerable.cs" />
+    <Compile Include="BaseClasses\Enumerator.cs" />
+    <Compile Include="BaseClasses\IImplements.cs" />
+    <Compile Include="BaseClasses\InterfaceImplementor.cs" />
     <Compile Include="Network\TCPServer.cs" />
+    <Compile Include="Reports\HTMLLookupTable.cs" />
     <Compile Include="WebSockets\WebSocketConnection.cs" />
     <Compile Include="WebSockets\WebSocketData.cs" />
     <Compile Include="WebSockets\WebSocketServer.cs" />
@@ -62,7 +67,6 @@
     <Compile Include="SetUtils\ArrayUtils.cs" />
     <Compile Include="SetUtils\EnumUtil.cs" />
     <Compile Include="SetUtils\Number.cs" />
-    <Compile Include="SetUtils\Set.cs" />
     <Compile Include="SetUtils\SetUtils.cs" />
     <Compile Include="StatisticalModels\Expectation.cs" />
     <Compile Include="StatisticalModels\HiddenMarkovModel.cs" />
