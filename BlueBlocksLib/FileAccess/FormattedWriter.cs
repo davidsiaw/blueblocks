@@ -64,15 +64,23 @@ namespace BlueBlocksLib.FileAccess {
             } else if (o.GetType() == typeof(double)) {
 
                 m_stream.Write(b.GetBytes((double)o));
-
-            } else if (o.GetType().IsArray) {
+            }
+            else if (o.GetType() == typeof(byte))
+            {
+                m_stream.Write((byte)o);
+            }
+            else if (o.GetType().IsArray)
+            {
                 Array arr = (Array)o;
 
-                for (int i = 0; i < arraysize; i++) {
+                for (int i = 0; i < arraysize; i++)
+                {
                     Write(arr.GetValue(i), isLittleEndian, 0);
                 }
 
-            } else if (structlayout != null) {
+            }
+            else if (structlayout != null)
+            {
 
                 Type objecttype = o.GetType();
                 FieldInfo[] fis = objecttype.GetFields();
@@ -80,7 +88,8 @@ namespace BlueBlocksLib.FileAccess {
                 // Sort the fields into the order they were specified
                 Dictionary<string, IntPtr> fieldorder = new Dictionary<string, IntPtr>();
 
-                foreach (FieldInfo fi in fis) {
+                foreach (FieldInfo fi in fis)
+                {
                     fieldorder[fi.Name] = Marshal.OffsetOf(objecttype, fi.Name);
                 }
 
@@ -89,7 +98,8 @@ namespace BlueBlocksLib.FileAccess {
 
                 List<object> towrite = new List<object>();
 
-                foreach (FieldInfo fi in fis) {
+                foreach (FieldInfo fi in fis)
+                {
                     object[] lil = fi.GetCustomAttributes(typeof(LittleEndianAttribute), false);
                     object[] big = fi.GetCustomAttributes(typeof(BigEndianAttribute), false);
                     object[] array = fi.GetCustomAttributes(typeof(ArraySizeAttribute), false);
@@ -104,25 +114,35 @@ namespace BlueBlocksLib.FileAccess {
 
                     object field = fi.GetValue(o);
 
-                    if (array.Length > 0 && fi.FieldType.IsArray) {
+                    if (array.Length > 0 && fi.FieldType.IsArray)
+                    {
                         ArraySizeAttribute arr = (ArraySizeAttribute)array[0];
 
-                        if (field == null) {
-                            field = Array.CreateInstance(fi.FieldType.GetElementType(), arr.size);
+                        int size = FormattedReader.GetArraySize(o, objecttype, arr);
+
+                        if (field == null)
+                        {
+                            field = Array.CreateInstance(fi.FieldType.GetElementType(), size);
                         }
 
-                        Write(field, littleendian, arr.size);
+                        Write(field, littleendian, size);
 
-                    } else if (fi.FieldType.IsEnum) {
+                    }
+                    else if (fi.FieldType.IsEnum)
+                    {
 
                         Write((int)field, littleendian, 0);
 
-                    } else {
+                    }
+                    else
+                    {
                         Write(field, littleendian, 0);
                     }
                 }
 
-            } else {
+            }
+            else
+            {
                 throw new Exception("I don't know how to write this object:" + o.GetType().Name + " Please include the [StructLayout] attribute");
             }
 
