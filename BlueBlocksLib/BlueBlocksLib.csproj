@@ -45,6 +45,10 @@
     <Compile Include="BaseClasses\Enumerable.cs" />
     <Compile Include="BaseClasses\Enumerator.cs" />
     <Compile Include="BaseClasses\IImplements.cs" />
+    <Compile Include="Database\SQLite\SQLite3.cs" />
+    <Compile Include="Database\SQLite\SQLiteConnection.cs" />
+    <Compile Include="Database\SQLite\SQLiteException.cs" />
+    <Compile Include="Database\SQLite\SQLiteFlags.cs" />
     <Compile Include="Exceptions.cs" />
     <Compile Include="Geometry\Box2D.cs" />
     <Compile Include="Geometry\Line2D.cs" />
@@ -72,8 +76,6 @@
     <Compile Include="Collections\OneToOne.cs" />
     <Compile Include="Collections\Set.cs" />
     <Compile Include="Collections\TwoWayMap.cs" />
-    <Compile Include="Database\DBConnection.cs" />
-    <Compile Include="Database\IDatabaseImplementation.cs" />
     <Compile Include="Endianness\EndianBitConverter.cs" />
     <Compile Include="FileAccess\Attributes.cs" />
     <Compile Include="FileAccess\DisposableStream.cs" />
