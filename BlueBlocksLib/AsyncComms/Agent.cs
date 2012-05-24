@@ -64,6 +64,7 @@ namespace BlueBlocksLib.AsyncComms
                 } while (na != NextAction.Finish);
                 exitAction();
             }));
+			t.IsBackground = true;
         }
 
         protected Agent(MessageQueue<T> messageQueue)
@@ -116,5 +117,11 @@ namespace BlueBlocksLib.AsyncComms
             }
             messageQueue.Send(message);
         }
+
+		public int MessageQueueLength {
+			get {
+				return messageQueue.Count();
+			}
+		}
     }
 }

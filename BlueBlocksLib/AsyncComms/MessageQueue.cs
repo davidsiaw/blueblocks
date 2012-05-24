@@ -42,5 +42,11 @@ namespace BlueBlocksLib.AsyncComms
             }
             return buffer.Dequeue();
         }
-    }
+
+		[MethodImpl(MethodImplOptions.Synchronized)]
+		public int Count() {
+			return buffer.Count;
+		}
+
+	}
 }

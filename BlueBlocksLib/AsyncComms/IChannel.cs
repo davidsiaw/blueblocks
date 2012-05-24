@@ -8,5 +8,6 @@ namespace BlueBlocksLib.AsyncComms
     {
         void Send(T v);
         T Receive();
+		int Count();
     }
 }

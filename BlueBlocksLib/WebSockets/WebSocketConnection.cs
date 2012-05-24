@@ -12,9 +12,18 @@ namespace BlueBlocksLib.WebSockets
         System.Net.Sockets.TcpClient client;
         BigEndianBitConverter bebc = new BigEndianBitConverter();
 
-		public WebSocketConnection(Action<WebSocketConnection, WebSocketData> onData) {
+		public WebSocketConnection(string hostname, int port, Action<WebSocketConnection, WebSocketData> onData) {
 
+			this.onData = onData;
+			client = new System.Net.Sockets.TcpClient(hostname, port);
+
+			byte[] b = new byte[1024];
+			int size = client.Client.Receive(b);
+			byte[] feed = new byte[size];
+			Array.Copy(b, feed, size);
+			Feed(feed);
 		}
+
 
         internal WebSocketConnection(Action<WebSocketConnection, WebSocketData> onData, System.Net.Sockets.TcpClient client)
         {
