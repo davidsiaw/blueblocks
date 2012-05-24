@@ -12,6 +12,7 @@
     <AssemblyName>BlueBlocksLib</AssemblyName>
     <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -41,17 +42,25 @@
     <Compile Include="AsyncComms\IChannel.cs" />
     <Compile Include="AsyncComms\MessageQueue.cs" />
     <Compile Include="AsyncComms\MessageStack.cs" />
-    <Compile Include="BaseClasses\GenericEventArgs.cs" />
+    <Compile Include="BaseClasses\Enumerable.cs" />
+    <Compile Include="BaseClasses\Enumerator.cs" />
     <Compile Include="BaseClasses\IImplements.cs" />
-    <Compile Include="Collections\Table.cs" />
+    <Compile Include="Exceptions.cs" />
+    <Compile Include="Geometry\Box2D.cs" />
+    <Compile Include="Geometry\Line2D.cs" />
+    <Compile Include="Geometry\Point2D.cs" />
     <Compile Include="Network\TCPServer.cs" />
+    <Compile Include="Reports\HTMLLookupTable.cs" />
+    <Compile Include="BaseClasses\GenericEventArgs.cs" />
+    <Compile Include="Collections\Table.cs" />
     <Compile Include="PluginLoader\PluginDll.cs" />
     <Compile Include="PluginLoader\PluginProcess.cs" />
     <Compile Include="SetUtils\Collator.cs" />
-    <Compile Include="SetUtils\Enumerable.cs" />
-    <Compile Include="SetUtils\Enumerator.cs" />
+    <Compile Include="SetUtils\OneToManyMap.cs" />
     <Compile Include="StatisticalModels\NaiveBayesClassifier.cs" />
-    <Compile Include="TypeUtils\InterfaceImplementor.cs" />
+    <Compile Include="TypeUtils\InterfaceImplementor.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="TypeUtils\TypeTools.cs" />
     <Compile Include="UITools\DragDropTools.cs" />
     <Compile Include="WebSockets\WebSocketConnection.cs" />
@@ -75,7 +84,6 @@
     <Compile Include="SetUtils\ArrayUtils.cs" />
     <Compile Include="SetUtils\EnumUtil.cs" />
     <Compile Include="SetUtils\Number.cs" />
-    <Compile Include="SetUtils\Set.cs" />
     <Compile Include="SetUtils\SetUtils.cs" />
     <Compile Include="StatisticalModels\Expectation.cs" />
     <Compile Include="StatisticalModels\HiddenMarkovModel.cs" />

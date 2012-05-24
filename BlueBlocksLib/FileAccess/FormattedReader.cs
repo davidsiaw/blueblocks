@@ -13,6 +13,11 @@ namespace BlueBlocksLib.FileAccess {
             get { return (BinaryReader)m_stream; }
         }
 
+        public FormattedReader(Stream stream)
+        {
+            m_stream = new BinaryReader(stream);
+        }
+
         public FormattedReader(string filename) {
             byte[] bytes = File.ReadAllBytes(filename);
 
@@ -188,37 +193,7 @@ namespace BlueBlocksLib.FileAccess {
             {
                 ArraySizeAttribute arr = (ArraySizeAttribute)array[0];
 
-                int size = arr.size;
-
-                if (!string.IsNullOrEmpty(arr.getSize))
-                {
-
-                    if (arr.getSize.Contains("()"))
-                    {
-                        // its a method
-                        var meth = objecttype.GetMethod(arr.getSize.Replace("()", ""));
-                        size = int.Parse(meth.Invoke(o, null).ToString());
-                    }
-                    else
-                    {
-                        // its a field or property
-                        var fld = objecttype.GetField(arr.getSize);
-                        var prop = objecttype.GetProperty(arr.getSize);
-
-                        if (fld != null)
-                        {
-                            size = int.Parse(fld.GetValue(o).ToString());
-                        }
-                        else if (prop != null)
-                        {
-                            size = int.Parse(prop.GetValue(o, null).ToString());
-                        }
-                        else
-                        {
-                            throw new Exception("Field or property called " + arr.getSize + " not found!");
-                        }
-                    }
-                }
+                int size = GetArraySize(o, objecttype, arr);
 
                 field = Array.CreateInstance(fi.FieldType.GetElementType(), size);
 
@@ -239,6 +214,42 @@ namespace BlueBlocksLib.FileAccess {
                 Read(ref field, littleendian);
             }
             fi.SetValue(o, field);
+        }
+
+        internal static int GetArraySize(object o, Type objecttype, ArraySizeAttribute arr)
+        {
+            int size = arr.size;
+
+            if (!string.IsNullOrEmpty(arr.getSize))
+            {
+
+                if (arr.getSize.Contains("()"))
+                {
+                    // its a method
+                    var meth = objecttype.GetMethod(arr.getSize.Replace("()", ""));
+                    size = int.Parse(meth.Invoke(o, null).ToString());
+                }
+                else
+                {
+                    // its a field or property
+                    var fld = objecttype.GetField(arr.getSize);
+                    var prop = objecttype.GetProperty(arr.getSize);
+
+                    if (fld != null)
+                    {
+                        size = int.Parse(fld.GetValue(o).ToString());
+                    }
+                    else if (prop != null)
+                    {
+                        size = int.Parse(prop.GetValue(o, null).ToString());
+                    }
+                    else
+                    {
+                        throw new Exception("Field or property called " + arr.getSize + " not found!");
+                    }
+                }
+            }
+            return size;
         }
     } 
         

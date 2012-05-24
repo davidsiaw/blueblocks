@@ -46,17 +46,22 @@ namespace BlueBlocksLib.Reports {
 
 		public string ClassName = null;
 
-		public string Render() {
-			string[] content = Array.ConvertAll(m_data, x => RenderData(x));
+        public string Render(Func<string, string> translationDelegate)
+        {
+            string[] content = Array.ConvertAll(m_data, x => RenderData(x));
 
 			string[] rows = ArrayUtils.ConvertAll(content, x => "<tr>" + x + "</tr>");
 
 			return "<table " + (ClassName == null ? "" : ("class=\"" + ClassName + "\"")) + ">" +
 				"<thead><tr>" +
-				RenderHeader() +
-				"</tr><thead>" +
+				RenderHeader(translationDelegate) +
+				"</tr></thead>" +
 				string.Join("", rows) +
 				"</table>";
+        }
+
+		public string Render() {
+            return Render(x => x);
 		}
 
 		FieldInfo[] m_fieldsInOrder = null;
@@ -76,7 +81,7 @@ namespace BlueBlocksLib.Reports {
 			return ArrayUtils.ConvertAll(m_fieldsInOrder, x => converter(x));
 		}
 
-		string RenderHeader() {
+		string RenderHeader(Func<string,string> translationDelegate) {
 			string[] headerNames = ConvertFields(x => {
 				HeaderNameAttribute attr = (HeaderNameAttribute)
 					x.GetCustomAttributes(typeof(HeaderNameAttribute), false)[0];
@@ -89,18 +94,18 @@ namespace BlueBlocksLib.Reports {
                     string header = "";
                     for (int i = 0; i < multicolumn[0].Size; i++)
                     {
-                        header += MakeColumnHeader(x, attr);
+                        header += MakeColumnHeader(x, attr, translationDelegate);
                     }
                     return header;
                 }
 
-                return MakeColumnHeader(x, attr);
+                return MakeColumnHeader(x, attr, translationDelegate);
 			});
 
             return string.Join("\r\n", headerNames);
 		}
 
-        private static string MakeColumnHeader(FieldInfo x, HeaderNameAttribute attr)
+        private static string MakeColumnHeader(FieldInfo x, HeaderNameAttribute attr, Func<string,string> translationDelegate)
         {
 
             ColumnSizeAttribute[] colsize = (ColumnSizeAttribute[])
@@ -108,10 +113,10 @@ namespace BlueBlocksLib.Reports {
 
             if (colsize.Length != 0)
             {
-                return "<th width=\"" + colsize[0].Size + "px\">" + attr.Name + "</th>";
+                return "<th width=\"" + colsize[0].Size + "px\">" + translationDelegate(attr.Name) + "</th>";
             }
 
-            return "<th>" + attr.Name + "</th>";
+            return "<th>" + translationDelegate(attr.Name) + "</th>";
         }
 
 

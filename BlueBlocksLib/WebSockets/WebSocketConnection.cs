@@ -224,7 +224,5 @@ namespace BlueBlocksLib.WebSockets
 
             return true;
         }
-
-
     }
 }
