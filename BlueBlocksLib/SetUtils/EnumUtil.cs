@@ -19,7 +19,6 @@ namespace BlueBlocksLib.SetUtils {
 	}
 
 	public class EnumUtil : EnumUtil<Enum> {
-		private EnumUtil() {
-		}
+		private EnumUtil() { }
 	}
 }

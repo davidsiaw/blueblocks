@@ -18,19 +18,24 @@ namespace BlueBlocksLib.Database {
 
 		FieldInfo[] fis;
 		IntPtr db;
-		string SQL;
+		string fieldlist;
+		string tablename;
+		string condition;
 		string order;
 		string limit;
 		string offset;
 		Dictionary<string, object> conditions = new Dictionary<string, object>();
-		internal Result(FieldInfo[] fis, IntPtr db, string SQL) {
+		internal Result(FieldInfo[] fis, IntPtr db, string fieldlist, string tablename) {
 			this.fis = fis;
 			this.db = db;
-			this.SQL = SQL;
+			this.fieldlist = fieldlist;
+			this.tablename = tablename;
+			this.condition = " 1=1 ";
 		}
 
-		private Result(FieldInfo[] fis, IntPtr db, string SQL, Dictionary<string, object> conditions)
-			: this(fis, db, SQL) {
+		private Result(FieldInfo[] fis, IntPtr db, string fieldlist, string tablename, string condition, Dictionary<string, object> conditions)
+			: this(fis, db, fieldlist, tablename) {
+			this.condition = condition;
 			this.conditions = conditions;
 		}
 
@@ -62,7 +67,15 @@ namespace BlueBlocksLib.Database {
 			Dictionary<string, object> newConditions = new Dictionary<string, object>(conditions);
 			string condname = "@param" + newConditions.Count;
 			newConditions.Add(condname, cond);
-			return new Result<T>(fis, db, SQL + " AND " + column + " " + operatorSymbol + " " + condname, newConditions);
+			return new Result<T>(fis, db, fieldlist, tablename, condition + " AND " + column + " " + operatorSymbol + " " + condname, newConditions);
+		}
+
+		public int Count() {
+			IntPtr stmt = SQLite3.Prepare2(db, "SELECT COUNT (" + fieldlist + ") FROM " + tablename + " WHERE " + condition);
+			BindConditions(stmt);
+			var res = SQLite3.Step(stmt);
+			if (res != SQLite3.Result.Row) { throw new Exception("no count!"); }
+			return SQLite3.ColumnInt(stmt, 1);
 		}
 
 		#region IEnumerable<T> Members
@@ -70,12 +83,8 @@ namespace BlueBlocksLib.Database {
 		public IEnumerator<T> GetEnumerator() {
 
 			// We prepare the SQL here, where we actually need it
-			IntPtr stmt = SQLite3.Prepare2(db, SQL);
-			foreach (var cond in conditions) {
-				int paramIndex = SQLite3.BindParameterIndex(stmt, cond.Key);
-				var bindresult = SQLite3.GetBindFunc(SQLite3.GetSQLType(cond.Value.GetType()))(stmt, paramIndex, cond.Value);
-				SQLite3.CheckResult(db, bindresult);
-			}
+			IntPtr stmt = SQLite3.Prepare2(db, "SELECT " + fieldlist + " FROM " + tablename + " WHERE " + condition);
+			BindConditions(stmt);
 
 			// Step through each row and return as you go
 			while (SQLite3.Step(stmt) == SQLite3.Result.Row) {
@@ -90,6 +99,14 @@ namespace BlueBlocksLib.Database {
 			SQLite3.Finalize(stmt);
 		}
 
+		private void BindConditions(IntPtr stmt) {
+			foreach (var cond in conditions) {
+				int paramIndex = SQLite3.BindParameterIndex(stmt, cond.Key);
+				var bindresult = SQLite3.GetBindFunc(SQLite3.GetSQLType(cond.Value.GetType()))(stmt, paramIndex, cond.Value);
+				SQLite3.CheckResult(db, bindresult);
+			}
+		}
+
 		#endregion
 
 		#region IEnumerable Members
@@ -101,11 +118,26 @@ namespace BlueBlocksLib.Database {
 		#endregion
 	}
 
+	public class SQLiteTransaction : IDisposable {
+		SQLiteConnection conn;
+		public SQLiteTransaction(SQLiteConnection conn) {
+			this.conn = conn;
+			conn.BeginTransaction();
+		}
+
+		#region IDisposable Members
+
+		public void Dispose() {
+			conn.EndTransaction();
+		}
+
+		#endregion
+	}
 
 	/// <summary>
 	/// A database connection to an SQLite file
 	/// </summary>
-	public class SQLiteConnection :IDisposable {
+	public class SQLiteConnection : IDisposable {
 
 		IntPtr db;
 		public SQLiteConnection(string conn) {
@@ -119,6 +151,20 @@ namespace BlueBlocksLib.Database {
 			var stringFieldList = string.Join(", ", fieldList);
 
 			IntPtr stmt = SQLite3.Prepare2(db, "CREATE TABLE IF NOT EXISTS " + name + " (rowid INTEGER PRIMARY KEY AUTOINCREMENT, " + stringFieldList + ") ");
+			var result = SQLite3.Step(stmt);
+			SQLite3.CheckResult(db, result);
+			SQLite3.Finalize(stmt);
+		}
+
+		public void BeginTransaction() {
+			RunStatement("BEGIN TRANSACTION");
+		}
+		public void EndTransaction() {
+			RunStatement("END TRANSACTION");
+		}
+
+		void RunStatement(string statement) {
+			IntPtr stmt = SQLite3.Prepare2(db, statement);
 			var result = SQLite3.Step(stmt);
 			SQLite3.CheckResult(db, result);
 			SQLite3.Finalize(stmt);
@@ -145,8 +191,22 @@ namespace BlueBlocksLib.Database {
 		public Result<T> Select<T>(string table) where T : new() {
 			var fis = typeof(T).GetFields();
 			var fieldList = ArrayUtils.ConvertAll(fis, x => x.Name);
-			string SQL = "SELECT " + string.Join(", ", fieldList) + " FROM " + table + " WHERE 1=1 ";
-			return new Result<T>(fis, db, SQL);
+			string SQL = string.Join(", ", fieldList) + " FROM " + table + " WHERE 1=1 ";
+			return new Result<T>(fis, db, string.Join(", ", fieldList), table);
+		}
+
+		public bool TableExists(string table) {
+			return Select<SQLite_Master>("sqlite_master").
+				WhereEquals("name", table).
+				WhereEquals("type", "table").Count() > 0;
+		}
+
+		struct SQLite_Master {
+			public string type;
+			public string name;
+			public string tbl_name;
+			public int rootpage;
+			public int sql;
 		}
 
 		#region IDisposable Members
@@ -159,6 +219,7 @@ namespace BlueBlocksLib.Database {
 		}
 
 		#endregion
+
 	}
 
 }

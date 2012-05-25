@@ -41,6 +41,11 @@ namespace BlueBlocksLib.Database.SQLite {
 			Serialized = 3
 		}
 
+		public enum DestructorBehaviour {
+			SQLITE_STATIC = 0,
+			SQLITE_TRANSIENT = -1
+		}
+
 		[DllImport("sqlite3", EntryPoint = "sqlite3_open")]
 		public static extern Result Open(string filename, out IntPtr db);
 
@@ -106,10 +111,10 @@ namespace BlueBlocksLib.Database.SQLite {
 		public static extern int BindDouble(IntPtr stmt, int index, double val);
 
 		[DllImport("sqlite3", EntryPoint = "sqlite3_bind_text")]
-		public static extern int BindText(IntPtr stmt, int index, byte[] val, int n, IntPtr free);
+		public static extern int BindText(IntPtr stmt, int index, byte[] val, int n, DestructorBehaviour free);
 
 		[DllImport("sqlite3", EntryPoint = "sqlite3_bind_blob")]
-		public static extern int BindBlob(IntPtr stmt, int index, byte[] val, int n, IntPtr free);
+		public static extern int BindBlob(IntPtr stmt, int index, byte[] val, int n, DestructorBehaviour free);
 
 		[DllImport("sqlite3", EntryPoint = "sqlite3_column_count")]
 		public static extern int ColumnCount(IntPtr stmt);
@@ -179,18 +184,25 @@ namespace BlueBlocksLib.Database.SQLite {
 			typeToColtype[typeof(ushort)] = ColType.INTEGER;
 			typeToColtype[typeof(ulong)] = ColType.INTEGER;
 			typeToColtype[typeof(byte)] = ColType.INTEGER;
+			typeToColtype[typeof(bool)] = ColType.INTEGER;
 			typeToColtype[typeof(byte[])] = ColType.BLOB;
 			typeToColtype[typeof(string)] = ColType.TEXT;
 
-			colTypeToFunc[ColType.BLOB] = (stmt, index, val) => (Result)BindBlob(stmt, index, (byte[])val, ((byte[])val).Length, IntPtr.Zero);
+			colTypeToFunc[ColType.BLOB] = (stmt, index, val) => (Result)BindBlob(stmt, index, (byte[])val, ((byte[])val).Length, DestructorBehaviour.SQLITE_TRANSIENT);
 			colTypeToFunc[ColType.INTEGER] = (stmt, index, val) => {
+				if (val.GetType().IsEnum) {
+					return (Result)BindInt64(stmt, index, (int)Enum.Parse(val.GetType(), val.ToString()));
+				}
+				if (val.GetType() == typeof(bool)) {
+					return (Result)BindInt64(stmt, index, (bool)val ? 1 : 0);
+				}
 				long value = long.Parse(val.ToString());
 				return (Result)BindInt64(stmt, index, value); 
 			};
 			colTypeToFunc[ColType.FLOAT] = (stmt, index, val) => (Result)BindDouble(stmt, index, (double)val);
 			colTypeToFunc[ColType.TEXT] = (stmt, index, val) =>  {
-				byte[] bytes = Encoding.UTF8.GetBytes((string)val);
-				return (Result)BindText(stmt, index, bytes, bytes.Length, IntPtr.Zero);
+				byte[] bytes = Encoding.UTF8.GetBytes((string)val ?? "");
+				return (Result)BindText(stmt, index, bytes, bytes.Length, DestructorBehaviour.SQLITE_TRANSIENT);
 			};
 
 			typeToReadFunc[typeof(byte[])] = (stmt, index) => ColumnByteArray(stmt, index);
@@ -204,6 +216,7 @@ namespace BlueBlocksLib.Database.SQLite {
 			typeToReadFunc[typeof(float)] = (stmt, index) => (float)ColumnDouble(stmt, index);
 			typeToReadFunc[typeof(double)] = (stmt, index) => ColumnDouble(stmt, index);
 			typeToReadFunc[typeof(string)] = (stmt, index) => ColumnString(stmt, index);
+			typeToReadFunc[typeof(bool)] = (stmt, index) => ColumnInt(stmt, index) == 0 ? false : true;
 		}
 
 		public static BindFunc GetBindFunc(ColType coltype) {
@@ -211,10 +224,16 @@ namespace BlueBlocksLib.Database.SQLite {
 		}
 
 		public static ReadFunc GetReadFunc(Type type) {
+			if (type.IsEnum) {
+				return typeToReadFunc[typeof(int)];
+			}
 			return typeToReadFunc[type];
 		}
 
 		public static ColType GetSQLType(Type type) {
+			if (type.IsEnum) {
+				return typeToColtype[typeof(int)];
+			}
 			return typeToColtype[type];
 		}
 
