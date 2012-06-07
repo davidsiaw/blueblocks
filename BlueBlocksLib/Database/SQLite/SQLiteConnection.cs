@@ -201,6 +201,10 @@ namespace BlueBlocksLib.Database {
 				WhereEquals("type", "table").Count() > 0;
 		}
 
+		public void Index(string table, params string[] columns) {
+			RunStatement("CREATE INDEX " + table + "_" + string.Join("_", columns) + "_idx ON " + table + " (" + string.Join(",", columns) + ")");
+		}
+
 		struct SQLite_Master {
 			public string type;
 			public string name;
