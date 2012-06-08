@@ -82,6 +82,11 @@ namespace BlueBlocksLib.Database.SQLite {
 		[DllImport("sqlite3", EntryPoint = "sqlite3_errmsg16")]
 		public static extern IntPtr Errmsg(IntPtr db);
 
+		public static Result StepAndCheck(IntPtr stmt) {
+			var res = Step(stmt);
+			return res;
+		}
+
 		public static string GetErrmsg(IntPtr db) {
 			if (db == IntPtr.Zero) {
 				return "Could not open database file";

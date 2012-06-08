@@ -24,6 +24,8 @@ namespace BlueBlocksLib.Database {
 		string order;
 		string limit;
 		string offset;
+		string conditionTable;
+		string join;
 		Dictionary<string, object> conditions = new Dictionary<string, object>();
 		internal Result(FieldInfo[] fis, IntPtr db, string fieldlist, string tablename) {
 			this.fis = fis;
@@ -31,12 +33,15 @@ namespace BlueBlocksLib.Database {
 			this.fieldlist = fieldlist;
 			this.tablename = tablename;
 			this.condition = " 1=1 ";
+			this.conditionTable = tablename;
+			this.join = "";
 		}
 
-		private Result(FieldInfo[] fis, IntPtr db, string fieldlist, string tablename, string condition, Dictionary<string, object> conditions)
+		private Result(FieldInfo[] fis, IntPtr db, string fieldlist, string tablename, string condition, Dictionary<string, object> conditions, string join)
 			: this(fis, db, fieldlist, tablename) {
 			this.condition = condition;
 			this.conditions = conditions;
+			this.join = join;
 		}
 
 		public Result<T> WhereEquals(string column, object cond) {
@@ -63,15 +68,29 @@ namespace BlueBlocksLib.Database {
 			return AddCondition(column, cond, "<=");
 		}
 
+		public Result<T> Limit(int num) {
+			var newres = new Result<T>(fis, db, fieldlist, tablename, condition, conditions, join);
+			newres.limit = num.ToString();
+			return newres;
+		}
+
+		public Result<T> Join(string joinTable, string joinTableColumn, string joinColumn) {
+			var newres = new Result<T>(fis, db, fieldlist, tablename, condition, conditions, join);
+			newres.join += join = " INNER JOIN " + joinTable + " ON " + joinTable + "." + joinTableColumn + " = " + tablename + "." + joinColumn;
+			newres.conditionTable = joinTable;
+			return newres;
+		}
+
 		Result<T> AddCondition(string column, object cond, string operatorSymbol) {
 			Dictionary<string, object> newConditions = new Dictionary<string, object>(conditions);
 			string condname = "@param" + newConditions.Count;
 			newConditions.Add(condname, cond);
-			return new Result<T>(fis, db, fieldlist, tablename, condition + " AND " + column + " " + operatorSymbol + " " + condname, newConditions);
+			return new Result<T>(fis, db, fieldlist, tablename, condition + " AND " + conditionTable + "." + column + " " + operatorSymbol + " " + condname, newConditions, join);
 		}
 
 		public int Count() {
-			IntPtr stmt = SQLite3.Prepare2(db, "SELECT COUNT (" + fieldlist + ") FROM " + tablename + " WHERE " + condition);
+			IntPtr stmt = SQLite3.Prepare2(db, "SELECT COUNT (" + fieldlist + ") FROM " + tablename + join + " WHERE " + condition + 
+				(limit != null ? (" LIMIT " + limit) : ""));
 			BindConditions(stmt);
 			var res = SQLite3.Step(stmt);
 			if (res != SQLite3.Result.Row) { throw new Exception("no count!"); }
@@ -83,7 +102,8 @@ namespace BlueBlocksLib.Database {
 		public IEnumerator<T> GetEnumerator() {
 
 			// We prepare the SQL here, where we actually need it
-			IntPtr stmt = SQLite3.Prepare2(db, "SELECT " + fieldlist + " FROM " + tablename + " WHERE " + condition);
+			IntPtr stmt = SQLite3.Prepare2(db, "SELECT " + fieldlist + " FROM " + tablename + join + " WHERE " + condition +
+				(limit != null ? (" LIMIT " + limit) : ""));
 			BindConditions(stmt);
 
 			// Step through each row and return as you go
@@ -192,7 +212,7 @@ namespace BlueBlocksLib.Database {
 			var fis = typeof(T).GetFields();
 			var fieldList = ArrayUtils.ConvertAll(fis, x => x.Name);
 			string SQL = string.Join(", ", fieldList) + " FROM " + table + " WHERE 1=1 ";
-			return new Result<T>(fis, db, string.Join(", ", fieldList), table);
+			return new Result<T>(fis, db, string.Join(", ", ArrayUtils.ConvertAll(fieldList, x => table + "." + x)), table);
 		}
 
 		public bool TableExists(string table) {
