@@ -79,7 +79,11 @@ namespace BlueBlocksLib.FileAccess {
             } else if (t == typeof(double)) {
                 o = b.ToDouble(m_stream.ReadBytes(8), 0);
 
-            } else if (t.IsArray) {
+			} else if (t.IsArray && t.GetElementType() == typeof(byte)) {
+				byte[] bytes = o as byte[];
+				m_stream.Read(bytes, 0, bytes.Length);
+
+			} else if (t.IsArray) {
                 ReadIntoArray(o, isLittleEndian);
 
             } else if (structlayout != null) {

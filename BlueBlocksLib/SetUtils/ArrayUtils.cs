@@ -40,6 +40,19 @@ namespace BlueBlocksLib.SetUtils
             return false;
         }
 
+		public static bool AreEqual<T>(T[] collection, T[] collection2) {
+			if (collection.Length != collection2.Length) {
+				return false;
+			}
+
+			for (int i = 0; i < collection.Length; i++) {
+				if (!collection[i].Equals(collection2[i])) {
+					return false;
+				}
+			}
+			return true;
+		}
+
         public static int FindIndex<T>(T[] collection, Predicate<T> predicate)
         {
             for (int i = 0; i < collection.Length; i++)
