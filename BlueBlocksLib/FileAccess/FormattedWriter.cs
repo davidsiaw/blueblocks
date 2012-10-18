@@ -65,6 +65,10 @@ namespace BlueBlocksLib.FileAccess {
 
                 m_stream.Write(b.GetBytes((double)o));
             }
+            else if (o.GetType().IsEnum)
+            {
+                m_stream.Write(b.GetBytes((int)o));
+            }
             else if (o.GetType() == typeof(byte))
             {
                 m_stream.Write((byte)o);

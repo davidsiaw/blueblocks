@@ -60,6 +60,7 @@
     <Compile Include="PluginLoader\PluginDll.cs" />
     <Compile Include="PluginLoader\PluginProcess.cs" />
     <Compile Include="SetUtils\Collator.cs" />
+    <Compile Include="SetUtils\Counter.cs" />
     <Compile Include="SetUtils\OneToManyMap.cs" />
     <Compile Include="StatisticalModels\NaiveBayesClassifier.cs" />
     <Compile Include="TypeUtils\InterfaceImplementor.cs">
@@ -67,6 +68,7 @@
     </Compile>
     <Compile Include="TypeUtils\TypeTools.cs" />
     <Compile Include="UITools\DragDropTools.cs" />
+    <Compile Include="UITools\CueTools.cs" />
     <Compile Include="WebSockets\WebSocketConnection.cs" />
     <Compile Include="WebSockets\WebSocketData.cs" />
     <Compile Include="WebSockets\WebSocketServer.cs" />
