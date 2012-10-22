@@ -25,6 +25,18 @@ namespace BlueBlocksLib.FileAccess {
         public ArraySizeAttribute(string sizeFunction) { this.getSize = sizeFunction; }
     }
 
+	[AttributeUsage(AttributeTargets.Field)]
+	public class ReadTypeAttribute : Attribute {
+		public readonly Type t;
+		public readonly string field;
+		public readonly uint value;
+		public ReadTypeAttribute(Type type, string field, uint value) {
+			this.t = type;
+			this.field = field;
+			this.value = value;
+		}
+	}
+
     // Attribute for saying where the start offset of the item should be
     [AttributeUsage(AttributeTargets.Field)]
     public class OffsetAttribute : Attribute {

@@ -49,10 +49,11 @@ namespace BlueBlocksLib.FileAccess {
                 b = new LittleEndianBitConverter();
             }
 
-            if (t == typeof(int) ) {
-                o = b.ToInt32(m_stream.ReadBytes(4), 0);
+			if (t.IsEnum) {
+				t = Enum.GetUnderlyingType(t);
+			}
 
-            } else if (t.IsEnum) {
+            if (t == typeof(int) ) {
                 o = b.ToInt32(m_stream.ReadBytes(4), 0);
 
             } else if (t == typeof(uint)) {
@@ -98,9 +99,9 @@ namespace BlueBlocksLib.FileAccess {
         private void ReadIntoArray(object o, bool isLittleEndian) {
             Array arr = (Array)o;
 
-            object element = Activator.CreateInstance(o.GetType().GetElementType());
 
-            for (int i = 0; i < arr.Length; i++) {
+			for (int i = 0; i < arr.Length; i++) {
+				object element = Activator.CreateInstance(o.GetType().GetElementType());
                 Read(ref element, isLittleEndian);
                 arr.SetValue(element, i);
             }
@@ -119,7 +120,7 @@ namespace BlueBlocksLib.FileAccess {
 
             // Read the laid out fields
             foreach (FieldInfo fi in fis) {
-                OffsetAttribute[] offset = (OffsetAttribute[])fi.GetCustomAttributes(typeof(OffsetAttribute), false);
+				OffsetAttribute[] offset = (OffsetAttribute[])fi.GetCustomAttributes(typeof(OffsetAttribute), false);
                 InternalUseAttribute[] internalUse = (InternalUseAttribute[])fi.GetCustomAttributes(typeof(InternalUseAttribute), false);
 
                 if (internalUse.Length > 0)
@@ -133,7 +134,7 @@ namespace BlueBlocksLib.FileAccess {
                     continue;
                 }
 
-                ReadIntoField(o, fi);
+				ReadIntoField(o, fi);
             }
 
             // Save our position
@@ -143,6 +144,9 @@ namespace BlueBlocksLib.FileAccess {
             foreach (KeyValuePair<FieldInfo, OffsetAttribute> kvp in fieldsWithSpecifiedOffsets) {
 
                 OffsetAttribute offattr = kvp.Value;
+				if (!string.IsNullOrEmpty(offattr.getOffset)) {
+					offattr.SpecificOffset = (int)o.GetType().GetField(offattr.getOffset).GetValue(o);
+				}
 
                 // Offset is specified by a field
                 m_stream.BaseStream.Seek(offattr.SpecificOffset, SeekOrigin.Begin);
@@ -181,38 +185,50 @@ namespace BlueBlocksLib.FileAccess {
             }
         }
 
-        private void ReadIntoField(object o, FieldInfo fi) {
+		private void ReadIntoField(object o, FieldInfo fi) {
 
             object[] lil = fi.GetCustomAttributes(typeof(LittleEndianAttribute), false);
             object[] big = fi.GetCustomAttributes(typeof(BigEndianAttribute), false);
             object[] array = fi.GetCustomAttributes(typeof(ArraySizeAttribute), false);
 
+			ReadTypeAttribute[] readtypes = (ReadTypeAttribute[])fi.GetCustomAttributes(typeof(ReadTypeAttribute), false);
+
+			Type t = fi.FieldType;
+			if (readtypes.Length != 0) {
+				foreach (var readtype in readtypes) {
+					uint val = (uint)o.GetType().GetField(readtype.field).GetValue(o);
+					if (readtype.value == val) {
+						t = readtype.t;
+						break;
+					}
+				}
+			}
 
             bool littleendian = big.Length == 0;
 
             Type objecttype = o.GetType();
             object field = fi.GetValue(o);
 
-            if (fi.FieldType.IsArray)
+			if (t.IsArray)
             {
                 ArraySizeAttribute arr = (ArraySizeAttribute)array[0];
 
                 int size = GetArraySize(o, objecttype, arr);
 
-                field = Array.CreateInstance(fi.FieldType.GetElementType(), size);
+                field = Array.CreateInstance(t.GetElementType(), size);
 
                 Read(ref field, littleendian);
 
             }
             else
             {
-                if (fi.FieldType == typeof(string))
+                if (t == typeof(string))
                 {
                     field = "";
                 }
                 else if (field == null)
                 {
-                    field = Activator.CreateInstance(fi.FieldType);
+                    field = Activator.CreateInstance(t);
                 }
 
                 Read(ref field, littleendian);
