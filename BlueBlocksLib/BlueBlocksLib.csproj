@@ -34,6 +34,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
   </ItemGroup>
@@ -45,6 +46,9 @@
     <Compile Include="BaseClasses\Enumerable.cs" />
     <Compile Include="BaseClasses\Enumerator.cs" />
     <Compile Include="BaseClasses\IImplements.cs" />
+    <Compile Include="Controls\GraphMap.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Database\SQLite\SQLite3.cs" />
     <Compile Include="Database\SQLite\SQLiteConnection.cs" />
     <Compile Include="Database\SQLite\SQLiteException.cs" />

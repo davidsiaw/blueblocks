@@ -37,9 +37,17 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="TestGraphMap.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="TestGraphMap.Designer.cs">
+      <DependentUpon>TestGraphMap.cs</DependentUpon>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -51,6 +59,11 @@
       <Project>{3E610D1E-838A-4EAB-80AE-CA4E78C2D83A}</Project>
       <Name>BlueBlocksLib</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="TestGraphMap.resx">
+      <DependentUpon>TestGraphMap.cs</DependentUpon>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
