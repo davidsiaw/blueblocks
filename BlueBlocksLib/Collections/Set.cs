@@ -6,7 +6,7 @@ using BlueBlocksLib.BaseClasses;
 
 namespace BlueBlocksLib.Collections
 {
-    class Set<T> : ICollection<T>
+    public class Set<T> : ICollection<T>
     {
         Dictionary<T, bool> set = new Dictionary<T, bool>();
 

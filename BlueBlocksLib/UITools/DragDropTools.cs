@@ -30,6 +30,12 @@ namespace BlueBlocksLib.UITools
                 onFilesDropped(a);
             });
 
+            c.DragOver += new DragEventHandler((o, e) =>
+            {
+                e.Effect = DragDropEffects.Copy;
+            });
+
         }
     }
+
 }

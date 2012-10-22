@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Windows.Forms;
 
 namespace BlueBlocks
 {
@@ -8,6 +9,7 @@ namespace BlueBlocks
     {
         static void Main(string[] args)
         {
+            Application.Run(new TestGraphMap());
         }
     }
 }

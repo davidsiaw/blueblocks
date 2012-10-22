@@ -34,6 +34,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
   </ItemGroup>
@@ -45,6 +46,9 @@
     <Compile Include="BaseClasses\Enumerable.cs" />
     <Compile Include="BaseClasses\Enumerator.cs" />
     <Compile Include="BaseClasses\IImplements.cs" />
+    <Compile Include="Controls\GraphMap.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Database\SQLite\SQLite3.cs" />
     <Compile Include="Database\SQLite\SQLiteConnection.cs" />
     <Compile Include="Database\SQLite\SQLiteException.cs" />
@@ -60,6 +64,7 @@
     <Compile Include="PluginLoader\PluginDll.cs" />
     <Compile Include="PluginLoader\PluginProcess.cs" />
     <Compile Include="SetUtils\Collator.cs" />
+    <Compile Include="SetUtils\Counter.cs" />
     <Compile Include="SetUtils\OneToManyMap.cs" />
     <Compile Include="StatisticalModels\NaiveBayesClassifier.cs" />
     <Compile Include="TypeUtils\InterfaceImplementor.cs">
@@ -67,6 +72,7 @@
     </Compile>
     <Compile Include="TypeUtils\TypeTools.cs" />
     <Compile Include="UITools\DragDropTools.cs" />
+    <Compile Include="UITools\CueTools.cs" />
     <Compile Include="WebSockets\WebSocketConnection.cs" />
     <Compile Include="WebSockets\WebSocketData.cs" />
     <Compile Include="WebSockets\WebSocketServer.cs" />

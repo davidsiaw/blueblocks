@@ -6,10 +6,13 @@ using System.Runtime.InteropServices;
 using System.Reflection;
 using BlueBlocksLib.Endianness;
 
-namespace BlueBlocksLib.FileAccess {
-    public class FormattedReader : DisposableStream {
+namespace BlueBlocksLib.FileAccess
+{
+    public class FormattedReader : DisposableStream
+    {
 
-        public BinaryReader BaseStream {
+        public BinaryReader BaseStream
+        {
             get { return (BinaryReader)m_stream; }
         }
 
@@ -18,34 +21,46 @@ namespace BlueBlocksLib.FileAccess {
             m_stream = new BinaryReader(stream);
         }
 
-        public FormattedReader(string filename) {
+        public readonly string Filename;
+
+        public FormattedReader(string filename)
+        {
             byte[] bytes = File.ReadAllBytes(filename);
 
             m_stream = new BinaryReader(new MemoryStream(bytes));
+
+            Filename = filename;
         }
 
-		public T Read<T>() where T : new() {
-			T o = new T();
-			object obj = (object)o;
-			Read(ref obj, true);
-			return (T)obj;
-		}
+        public T Read<T>() where T : new()
+        {
+            T o = new T();
+            object obj = (object)o;
+            Read(ref obj, true);
+            return (T)obj;
+        }
 
-		public bool EndOfStream {
-			get {
-				return ((BinaryReader)m_stream).BaseStream.Position == ((BinaryReader)m_stream).BaseStream.Length;
-			}
-		}
+        public bool EndOfStream
+        {
+            get
+            {
+                return ((BinaryReader)m_stream).BaseStream.Position == ((BinaryReader)m_stream).BaseStream.Length;
+            }
+        }
 
-        void Read(ref object o, bool isLittleEndian) {
+        void Read(ref object o, bool isLittleEndian)
+        {
             BinaryReader m_stream = (BinaryReader)this.m_stream;
-			Type t = o.GetType();
+            Type t = o.GetType();
             StructLayoutAttribute structlayout = t.StructLayoutAttribute;
 
             EndianBitConverter b;
-            if (!isLittleEndian) {
+            if (!isLittleEndian)
+            {
                 b = new BigEndianBitConverter();
-            } else {
+            }
+            else
+            {
                 b = new LittleEndianBitConverter();
             }
 
@@ -56,47 +71,75 @@ namespace BlueBlocksLib.FileAccess {
             if (t == typeof(int) ) {
                 o = b.ToInt32(m_stream.ReadBytes(4), 0);
 
-            } else if (t == typeof(uint)) {
+            }
+            else if (t == typeof(uint))
+            {
                 o = b.ToUInt32(m_stream.ReadBytes(4), 0);
 
-            } else if (t == typeof(short)) {
+            }
+            else if (t == typeof(short))
+            {
                 o = b.ToInt16(m_stream.ReadBytes(2), 0);
 
-            } else if (t == typeof(ushort)) {
+            }
+            else if (t == typeof(ushort))
+            {
                 o = b.ToUInt16(m_stream.ReadBytes(2), 0);
 
-            } else if (t == typeof(byte)) {
+            }
+            else if (t == typeof(byte))
+            {
                 o = m_stream.ReadBytes(1)[0];
 
-            } else if (t == typeof(long)) {
+            }
+            else if (t == typeof(long))
+            {
                 o = b.ToInt64(m_stream.ReadBytes(8), 0);
 
-            } else if (t == typeof(ulong)) {
+            }
+            else if (t == typeof(ulong))
+            {
                 o = b.ToUInt64(m_stream.ReadBytes(8), 0);
 
-            } else if (t == typeof(float)) {
+            }
+            else if (t == typeof(float))
+            {
                 o = b.ToSingle(m_stream.ReadBytes(4), 0);
 
-            } else if (t == typeof(double)) {
+            }
+            else if (t == typeof(double))
+            {
                 o = b.ToDouble(m_stream.ReadBytes(8), 0);
 
-			} else if (t.IsArray && t.GetElementType() == typeof(byte)) {
-				byte[] bytes = o as byte[];
-				m_stream.Read(bytes, 0, bytes.Length);
 
-			} else if (t.IsArray) {
-                ReadIntoArray(o, isLittleEndian);
+            }
+            else if (t.IsArray)
+            {
+                if (t.GetElementType() == typeof(byte))
+                {
+                    byte[] arr = (byte[])o;
+                    m_stream.Read(arr, 0, arr.Length);
+                }
+                else
+                {
+                    ReadIntoArray(o, isLittleEndian);
+                }
 
-            } else if (structlayout != null) {
+            }
+            else if (structlayout != null)
+            {
                 ReadIntoStruct(o, m_stream);
 
-            } else {
+            }
+            else
+            {
                 throw new Exception("I don't know how to write this object:" + o.GetType().Name + " Please include the [StructLayout] attribute");
             }
 
         }
 
-        private void ReadIntoArray(object o, bool isLittleEndian) {
+        private void ReadIntoArray(object o, bool isLittleEndian)
+        {
             Array arr = (Array)o;
 
 
@@ -107,7 +150,8 @@ namespace BlueBlocksLib.FileAccess {
             }
         }
 
-        private void ReadIntoStruct(object o, BinaryReader m_stream) {
+        private void ReadIntoStruct(object o, BinaryReader m_stream)
+        {
 
             Dictionary<FieldInfo, OffsetAttribute> fieldsWithSpecifiedOffsets = new Dictionary<FieldInfo, OffsetAttribute>();
             Type objecttype = o.GetType();
@@ -121,6 +165,7 @@ namespace BlueBlocksLib.FileAccess {
             // Read the laid out fields
             foreach (FieldInfo fi in fis) {
 				OffsetAttribute[] offset = (OffsetAttribute[])fi.GetCustomAttributes(typeof(OffsetAttribute), false);
+
                 InternalUseAttribute[] internalUse = (InternalUseAttribute[])fi.GetCustomAttributes(typeof(InternalUseAttribute), false);
 
                 if (internalUse.Length > 0)
@@ -128,7 +173,8 @@ namespace BlueBlocksLib.FileAccess {
                     continue;
                 }
 
-                if (offset.Length > 0) {
+                if (offset.Length > 0)
+                {
                     // Defer reading this field until we are done with all the laid-out ones
                     fieldsWithSpecifiedOffsets[fi] = offset[0];
                     continue;
@@ -141,7 +187,8 @@ namespace BlueBlocksLib.FileAccess {
             long endofstruct = m_stream.BaseStream.Position;
 
             // Read the field which have specific offsets specified
-            foreach (KeyValuePair<FieldInfo, OffsetAttribute> kvp in fieldsWithSpecifiedOffsets) {
+            foreach (KeyValuePair<FieldInfo, OffsetAttribute> kvp in fieldsWithSpecifiedOffsets)
+            {
 
                 OffsetAttribute offattr = kvp.Value;
 				if (!string.IsNullOrEmpty(offattr.getOffset)) {
@@ -157,7 +204,8 @@ namespace BlueBlocksLib.FileAccess {
             m_stream.BaseStream.Position = endofstruct;
         }
 
-        private static void SortFieldInfoArrayByOrderSpecified(Type objecttype, FieldInfo[] fis) {
+        private static void SortFieldInfoArrayByOrderSpecified(Type objecttype, FieldInfo[] fis)
+        {
             Dictionary<string, IntPtr> fieldorder = new Dictionary<string, IntPtr>();
 
 
@@ -271,7 +319,7 @@ namespace BlueBlocksLib.FileAccess {
             }
             return size;
         }
-    } 
-        
-    
+    }
+
+
 }
