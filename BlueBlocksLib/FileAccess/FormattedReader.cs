@@ -5,11 +5,12 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Reflection;
 using BlueBlocksLib.Endianness;
+using BlueBlocksLib.TypeUtils;
 
 namespace BlueBlocksLib.FileAccess
 {
-    public class FormattedReader : DisposableStream
-    {
+    public class FormattedReader : DisposableStream {
+		TypeTools t = new TypeTools();
 
         public BinaryReader BaseStream
         {
@@ -110,31 +111,32 @@ namespace BlueBlocksLib.FileAccess
             else if (t == typeof(double))
             {
                 o = b.ToDouble(m_stream.ReadBytes(8), 0);
-
-
             }
-            else if (t.IsArray)
-            {
-                if (t.GetElementType() == typeof(byte))
-                {
-                    byte[] arr = (byte[])o;
-                    m_stream.Read(arr, 0, arr.Length);
-                }
-                else
-                {
-                    ReadIntoArray(o, isLittleEndian);
-                }
+			else if (t == typeof(string))
+			{
+				List<byte> bytes = new List<byte>();
+				byte lastbyte = 0xff;
+				while (lastbyte != 0) {
+					lastbyte = m_stream.ReadByte();
+					bytes.Add(lastbyte);
+				}
+				o = Encoding.UTF8.GetString(bytes.ToArray()).Trim('\0');
+			} 
+			else if (t.IsArray)
+			{
+				if (t.GetElementType() == typeof(byte)) {
+					byte[] arr = (byte[])o;
+					m_stream.Read(arr, 0, arr.Length);
+				} else {
+					ReadIntoArray(o, isLittleEndian);
+				}
 
-            }
-            else if (structlayout != null)
-            {
-                ReadIntoStruct(o, m_stream);
+			} else if (structlayout != null) {
+				ReadIntoStruct(o, m_stream);
 
-            }
-            else
-            {
-                throw new Exception("I don't know how to write this object:" + o.GetType().Name + " Please include the [StructLayout] attribute");
-            }
+			} else {
+				throw new Exception("I don't know how to write this object:" + o.GetType().Name + " Please include the [StructLayout] attribute");
+			}
 
         }
 
@@ -155,7 +157,7 @@ namespace BlueBlocksLib.FileAccess
 
             Dictionary<FieldInfo, OffsetAttribute> fieldsWithSpecifiedOffsets = new Dictionary<FieldInfo, OffsetAttribute>();
             Type objecttype = o.GetType();
-            FieldInfo[] fis = objecttype.GetFields();
+			FieldInfo[] fis = t.GetFieldsOfTypeInOrderOfDeclaration(objecttype);
 
             // Sort the fields into the order they were specified
             SortFieldInfoArrayByOrderSpecified(objecttype, fis);
@@ -191,9 +193,7 @@ namespace BlueBlocksLib.FileAccess
             {
 
                 OffsetAttribute offattr = kvp.Value;
-				if (!string.IsNullOrEmpty(offattr.getOffset)) {
-					offattr.SpecificOffset = (int)o.GetType().GetField(offattr.getOffset).GetValue(o);
-				}
+				offattr.SpecificOffset = GetOffsetAttrContent(o, o.GetType(), offattr);
 
                 // Offset is specified by a field
                 m_stream.BaseStream.Seek(offattr.SpecificOffset, SeekOrigin.Begin);
@@ -244,7 +244,7 @@ namespace BlueBlocksLib.FileAccess
 			Type t = fi.FieldType;
 			if (readtypes.Length != 0) {
 				foreach (var readtype in readtypes) {
-					uint val = (uint)o.GetType().GetField(readtype.field).GetValue(o);
+					uint val = GetTypeValue(o, o.GetType(), readtype);
 					if (readtype.value == val) {
 						t = readtype.t;
 						break;
@@ -284,41 +284,43 @@ namespace BlueBlocksLib.FileAccess
             fi.SetValue(o, field);
         }
 
+		static long InferMember(long value, string spec, object o) {
+			if (string.IsNullOrEmpty(spec)) {
+				return value;
+			}
+			Type objecttype = o.GetType();
+			if (spec.Contains("()")) {
+				// its a method
+				var meth = objecttype.GetMethod(spec.Replace("()", ""));
+				value = long.Parse(meth.Invoke(o, null).ToString());
+			} else {
+				// its a field or property
+				var fld = objecttype.GetField(spec);
+				var prop = objecttype.GetProperty(spec);
+
+				if (fld != null) {
+					value = long.Parse(fld.GetValue(o).ToString());
+				} else if (prop != null) {
+					value = long.Parse(prop.GetValue(o, null).ToString());
+				} else {
+					throw new Exception("Field or property called " + spec + " not found!");
+				}
+			}
+			return value;
+		}
+
         internal static int GetArraySize(object o, Type objecttype, ArraySizeAttribute arr)
         {
-            int size = arr.size;
-
-            if (!string.IsNullOrEmpty(arr.getSize))
-            {
-
-                if (arr.getSize.Contains("()"))
-                {
-                    // its a method
-                    var meth = objecttype.GetMethod(arr.getSize.Replace("()", ""));
-                    size = int.Parse(meth.Invoke(o, null).ToString());
-                }
-                else
-                {
-                    // its a field or property
-                    var fld = objecttype.GetField(arr.getSize);
-                    var prop = objecttype.GetProperty(arr.getSize);
-
-                    if (fld != null)
-                    {
-                        size = int.Parse(fld.GetValue(o).ToString());
-                    }
-                    else if (prop != null)
-                    {
-                        size = int.Parse(prop.GetValue(o, null).ToString());
-                    }
-                    else
-                    {
-                        throw new Exception("Field or property called " + arr.getSize + " not found!");
-                    }
-                }
-            }
-            return size;
+			return (int)InferMember(arr.size, arr.getSize, o);
         }
+
+		internal static long GetOffsetAttrContent(object o, Type objecttype, OffsetAttribute arr) {
+			return (long)InferMember(arr.SpecificOffset, arr.getOffset, o);
+		}
+
+		internal static uint GetTypeValue(object o, Type objecttype, ReadTypeAttribute arr) {
+			return (uint)InferMember(arr.value, arr.field, o);
+		}
     }
 
 

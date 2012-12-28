@@ -25,7 +25,7 @@ namespace BlueBlocksLib.FileAccess {
         public ArraySizeAttribute(string sizeFunction) { this.getSize = sizeFunction; }
     }
 
-	[AttributeUsage(AttributeTargets.Field)]
+	[AttributeUsage(AttributeTargets.Field, AllowMultiple=true)]
 	public class ReadTypeAttribute : Attribute {
 		public readonly Type t;
 		public readonly string field;
