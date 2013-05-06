@@ -75,6 +75,7 @@ namespace BlueBlocksLib.Reports {
             this.itemsPerPage = itemsPerPage;
 		}
 
+        public string Id = null;
 		public string ClassName = null;
 
         public string Render(Func<string, string> translationDelegate)
@@ -90,7 +91,7 @@ namespace BlueBlocksLib.Reports {
                 ClassName += " table-page-number:t" + tableid + "page table-page-count:t" + tableid + "pages table-autopage:" + itemsPerPage;
             }
 
-			return "<table " + (ClassName == null ? "" : ("class=\"" + ClassName + "\"")) + ">" +
+            return "<table " + (Id == null ? "" : ("id=\"" + Id + "\"")) + " " + (ClassName == null ? "" : ("class=\"" + ClassName + "\"")) + ">" +
 				"<thead><tr>" +
 				RenderHeader(translationDelegate) +
                 "</tr>" + (itemsPerPage > 0 ? RenderPageFlipper() : "") + "</thead>" +

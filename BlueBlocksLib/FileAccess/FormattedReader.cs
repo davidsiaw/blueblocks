@@ -9,6 +9,12 @@ using BlueBlocksLib.TypeUtils;
 
 namespace BlueBlocksLib.FileAccess
 {
+    public enum FormattedRWOptions
+    {
+        PreRead,
+        DoNotPreRead,
+    }
+
     public class FormattedReader : DisposableStream {
 		TypeTools t = new TypeTools();
 
@@ -24,11 +30,17 @@ namespace BlueBlocksLib.FileAccess
 
         public readonly string Filename;
 
-        public FormattedReader(string filename)
+        public FormattedReader(string filename, FormattedRWOptions options = FormattedRWOptions.PreRead)
         {
-            byte[] bytes = File.ReadAllBytes(filename);
-
-            m_stream = new BinaryReader(new MemoryStream(bytes));
+            if (options == FormattedRWOptions.PreRead)
+            {
+                byte[] bytes = File.ReadAllBytes(filename);
+                m_stream = new BinaryReader(new MemoryStream(bytes));
+            }
+            else
+            {
+                m_stream = new BinaryReader(new FileStream(filename, FileMode.Open));
+            }
 
             Filename = filename;
         }
@@ -112,32 +124,55 @@ namespace BlueBlocksLib.FileAccess
             {
                 o = b.ToDouble(m_stream.ReadBytes(8), 0);
             }
-			else if (t == typeof(string))
-			{
-				List<byte> bytes = new List<byte>();
-				byte lastbyte = 0xff;
-				while (lastbyte != 0) {
-					lastbyte = m_stream.ReadByte();
-					bytes.Add(lastbyte);
-				}
-				o = Encoding.UTF8.GetString(bytes.ToArray()).Trim('\0');
-			} 
-			else if (t.IsArray)
-			{
-				if (t.GetElementType() == typeof(byte)) {
-					byte[] arr = (byte[])o;
-					m_stream.Read(arr, 0, arr.Length);
-				} else {
-					ReadIntoArray(o, isLittleEndian);
-				}
+            else if (t == typeof(string))
+            {
+                List<byte> bytes = GetString(m_stream);
+                o = Encoding.UTF8.GetString(bytes.ToArray()).Trim('\0');
+            }
+            else if (t.IsArray)
+            {
+                if (t.GetElementType() == typeof(byte))
+                {
+                    byte[] arr = (byte[])o;
+                    m_stream.Read(arr, 0, arr.Length);
+                }
+                else if (t.GetElementType() == typeof(string))
+                {
+                    string[] arr = (string[])o;
+                    for (int i = 0; i < arr.Length; i++)
+                    {
+                        List<byte> bytes = GetString(m_stream);
+                        arr[i] = Encoding.UTF8.GetString(bytes.ToArray()).Trim('\0');
+                    }
+                }
+                else
+                {
+                    ReadIntoArray(o, isLittleEndian);
+                }
 
-			} else if (structlayout != null) {
-				ReadIntoStruct(o, m_stream);
+            }
+            else if (structlayout != null)
+            {
+                ReadIntoStruct(o, m_stream);
 
-			} else {
-				throw new Exception("I don't know how to write this object:" + o.GetType().Name + " Please include the [StructLayout] attribute");
-			}
+            }
+            else
+            {
+                throw new Exception("I don't know how to write this object:" + o.GetType().Name + " Please include the [StructLayout] attribute");
+            }
 
+        }
+
+        private static List<byte> GetString(BinaryReader m_stream)
+        {
+            List<byte> bytes = new List<byte>();
+            byte lastbyte = 0xff;
+            while (lastbyte != 0)
+            {
+                lastbyte = m_stream.ReadByte();
+                bytes.Add(lastbyte);
+            }
+            return bytes;
         }
 
         private void ReadIntoArray(object o, bool isLittleEndian)
@@ -146,7 +181,8 @@ namespace BlueBlocksLib.FileAccess
 
 
 			for (int i = 0; i < arr.Length; i++) {
-				object element = Activator.CreateInstance(o.GetType().GetElementType());
+                object element = Activator.CreateInstance(o.GetType().GetElementType());
+				
                 Read(ref element, isLittleEndian);
                 arr.SetValue(element, i);
             }

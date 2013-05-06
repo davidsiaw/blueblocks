@@ -88,6 +88,7 @@ namespace BlueBlocksLib.Controls
 			void CancelAskToNotify();
 			Control MainControl { get; }
 			string Name { get; }
+            T Data { get; }
 		}
 
 		public class Box : ILinkable {
@@ -95,27 +96,26 @@ namespace BlueBlocksLib.Controls
 			Panel panel;
 			Button btn;
 			ContextMenu cm = new ContextMenu();
-			string name;
+            Label label;
 
-			public T data;
+            public T Data { get; set; }
 
-			internal Box(string name, Panel panel, Button btn, Control dragelem) {
-				dragger = new Dragger(dragelem, panel);
+			internal Box(Panel panel, Button btn, Label label) {
+				dragger = new Dragger(label, panel);
 				this.panel = panel;
 				this.panel.LocationChanged += new EventHandler((o, e) => { panel.Parent.Refresh(); });
-
+                this.label = label;
 
 				btn.Click += new EventHandler((o, e) => { cm.Show(btn, new Point()); });
 
-				dragelem.Click += new EventHandler(dragelem_Click);
+				label.Click += new EventHandler(dragelem_Click);
 
 				panel.MouseHover += new EventHandler(panel_MouseHover);
 				panel.MouseLeave += new EventHandler(panel_MouseLeave);
-				dragelem.MouseHover += new EventHandler(panel_MouseHover);
-				dragelem.MouseLeave += new EventHandler(panel_MouseLeave);
+				label.MouseHover += new EventHandler(panel_MouseHover);
+				label.MouseLeave += new EventHandler(panel_MouseLeave);
 				origColor = panel.BackColor;
 
-				this.name = name;
 			}
 
 			public void AddAction(string actionname, Action<Box> action) {
@@ -211,10 +211,16 @@ namespace BlueBlocksLib.Controls
 				}
 			}
 
+            internal Func<string, T> getDisplayName;
+
 			public string Name {
 				get {
-					return name;
-				}
+                    return label.Text;
+                }
+                set
+                {
+                    label.Text = getDisplayName(Data);
+                }
 			}
 		}
 
@@ -252,13 +258,18 @@ namespace BlueBlocksLib.Controls
 			Refresh();
 		}
 
-		public Box AddBox(string name, Color color, T data) {
+        public Box AddBox(Color color, T data)
+        {
+            return AddBox(color, data, x => x.ToString());
+        }
+
+		public Box AddBox(Color color, T data, Func<string, T> getDisplayName) {
 			if (selecting) {
 				return null;
 			}
 
 			Label lbl = new Label();
-			lbl.Text = name;
+            lbl.Text = getDisplayName(data);
 			lbl.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
 			lbl.AutoSize = true;
 			Padding pad = new System.Windows.Forms.Padding(5);
@@ -279,11 +290,12 @@ namespace BlueBlocksLib.Controls
 			p.Controls.Add(lbl);
 			p.Controls.Add(btn);
 
-			Box b = new Box(name, p, btn, lbl);
-			b.data = data;
+			Box b = new Box(p, btn, lbl);
+			b.Data = data;
 			btn.Tag = b;	// fill the button with this box
 			Controls.Add(p);
 			objects.Add(b);
+            b.getDisplayName = getDisplayName;
 
 			return b;
 		}
@@ -303,7 +315,6 @@ namespace BlueBlocksLib.Controls
                 x = x.TopLeft.X,
                 y = x.TopLeft.Y,
                 numEdges = x.Edges.Count,
-                name = x.Name,
                 color = x.MainControl.BackColor.ToArgb()
             });
 
@@ -318,7 +329,7 @@ namespace BlueBlocksLib.Controls
 				var gff = fr.Read<GraphFileFormat>();
                 Box[] boxes = ArrayUtils.ConvertAll(gff.vertices, x =>
                 {
-                    var box = AddBox(x.name, Color.FromArgb(x.color), x.data);
+                    var box = AddBox( Color.FromArgb(x.color), x.data);
                     box.MainControl.Location = new Point(x.x, x.y);
                     return box;
                 });
@@ -341,7 +352,6 @@ namespace BlueBlocksLib.Controls
 			public int[] edges;
 
 			public int color;
-			public string name;
 			public T data;
 		}
 
