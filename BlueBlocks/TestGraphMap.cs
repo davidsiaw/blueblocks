@@ -27,7 +27,6 @@ namespace BlueBlocks
             GraphMap<int>.Box box = gm.AddBox(Color.LightGreen, a, x=>"Node " + a);
             box.AddAction("Link", self => {
                 gm.SelectNode(node => {
-					self.LinkTo(node);
                 });
             });
             
