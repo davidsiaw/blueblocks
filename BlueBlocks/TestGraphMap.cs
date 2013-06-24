@@ -24,10 +24,9 @@ namespace BlueBlocks
 
         private void btn_add_Click(object sender, EventArgs e)
         {
-            var box = gm.AddBox("Node " + a, Color.LightGreen, a);
+            GraphMap<int>.Box box = gm.AddBox(Color.LightGreen, a, x=>"Node " + a);
             box.AddAction("Link", self => {
                 gm.SelectNode(node => {
-                    self.LinkTo(node);
                 });
             });
             

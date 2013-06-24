@@ -26,6 +26,15 @@ namespace BlueBlocksLib.SetUtils
             map[key][value] = true;
         }
 
+        public bool Exists(TKey key, TValue value)
+        {
+            if (!map.ContainsKey(key))
+            {
+                return false;
+            }
+            return map[key].ContainsKey(value);
+        }
+
         public IEnumerator<KeyValuePair<TKey, IEnumerable<TValue>>> GetEnumerator()
         {
             foreach (var kvpair in map)
@@ -37,6 +46,11 @@ namespace BlueBlocksLib.SetUtils
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
+        }
+
+        public bool ContainsKey(TKey key)
+        {
+            return map.ContainsKey(key);
         }
     }
 }
