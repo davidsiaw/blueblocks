@@ -88,6 +88,7 @@ namespace BlueBlocksLib.Controls
 			void CancelAskToNotify();
 			Control MainControl { get; }
 			string Name { get; }
+			T Data { get; }
 		}
 
 		public class Box : ILinkable {
@@ -97,7 +98,7 @@ namespace BlueBlocksLib.Controls
 			ContextMenu cm = new ContextMenu();
 			string name;
 
-			public T data;
+			public T Data { get; set; }
 
 			internal Box(string name, Panel panel, Button btn, Control dragelem) {
 				dragger = new Dragger(dragelem, panel);
@@ -280,7 +281,7 @@ namespace BlueBlocksLib.Controls
 			p.Controls.Add(btn);
 
 			Box b = new Box(name, p, btn, lbl);
-			b.data = data;
+			b.Data = data;
 			btn.Tag = b;	// fill the button with this box
 			Controls.Add(p);
 			objects.Add(b);
