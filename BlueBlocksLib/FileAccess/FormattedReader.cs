@@ -49,11 +49,25 @@ namespace BlueBlocksLib.FileAccess
             }
         }
 
+		private static void AdvanceForPadding(BinaryReader m_stream, int padding) {
+			if (padding != 0) {
+				if (m_stream.BaseStream.Position % padding == 0) {
+					return;
+				}
+
+				m_stream.BaseStream.Seek(
+					padding - (m_stream.BaseStream.Position % padding),
+					SeekOrigin.Current);
+			}
+		}
+
         void Read(ref object o, bool isLittleEndian)
         {
             BinaryReader m_stream = (BinaryReader)this.m_stream;
             Type t = o.GetType();
-            StructLayoutAttribute structlayout = t.StructLayoutAttribute;
+			StructLayoutAttribute structlayout = t.StructLayoutAttribute;
+			int padding = GrabPaddingLevel(t);
+			AdvanceForPadding(m_stream, padding);
 
             EndianBitConverter b;
             if (!isLittleEndian)
@@ -182,6 +196,8 @@ namespace BlueBlocksLib.FileAccess
                     continue;
                 }
 
+				int padding = GrabPaddingLevel(fi);
+				AdvanceForPadding(m_stream, padding);
 				ReadIntoField(o, fi);
             }
 
@@ -233,11 +249,27 @@ namespace BlueBlocksLib.FileAccess
             }
         }
 
+		public int GrabPaddingLevel(MemberInfo t) {
+
+			AlignmentAttribute[] paddingMarkers = (AlignmentAttribute[])t.GetCustomAttributes(typeof(AlignmentAttribute), false);
+			int padding = 0;
+			if (paddingMarkers.Length != 0) {
+				padding = paddingMarkers[0].m_boundarySize;
+			}
+			return padding;
+		}
+
 		private void ReadIntoField(object o, FieldInfo fi) {
 
             object[] lil = fi.GetCustomAttributes(typeof(LittleEndianAttribute), false);
             object[] big = fi.GetCustomAttributes(typeof(BigEndianAttribute), false);
-            object[] array = fi.GetCustomAttributes(typeof(ArraySizeAttribute), false);
+			object[] array = fi.GetCustomAttributes(typeof(ArraySizeAttribute), false);
+			object[] popoffset = fi.GetCustomAttributes(typeof(PopulateWithCurrentOffsetAttribute), false);
+
+			if (popoffset.Length != 0) {
+				fi.SetValue(o, BaseStream.BaseStream.Position);
+				return;
+			}
 
 			ReadTypeAttribute[] readtypes = (ReadTypeAttribute[])fi.GetCustomAttributes(typeof(ReadTypeAttribute), false);
 
@@ -261,11 +293,55 @@ namespace BlueBlocksLib.FileAccess
             {
                 ArraySizeAttribute arr = (ArraySizeAttribute)array[0];
 
-                int size = GetArraySize(o, objecttype, arr);
+                if (arr.info == ArraySizeAttribute.ArrayInfo.DefaultTerminated)
+                {
+					object defaultVer = Activator.CreateInstance(t.GetElementType());
+					List<object> elements = new List<object>();
 
-                field = Array.CreateInstance(t.GetElementType(), size);
+					while (true) {
+						object element = Activator.CreateInstance(t.GetElementType());
+						Read(ref element, littleendian);
+						elements.Add(element);
 
-                Read(ref field, littleendian);
+						if (element.Equals(defaultVer)) {
+							break;
+						}
+					}
+
+					field = Array.CreateInstance(t.GetElementType(), elements.Count);
+					Array theArray = (Array)field;
+					for (int i = 0; i < elements.Count; i++) {
+						theArray.SetValue(elements[i], i);
+					}
+
+                }
+                else if (arr.info == ArraySizeAttribute.ArrayInfo.TerminatedAtEndOfFile)
+                {
+                    object defaultVer = Activator.CreateInstance(t.GetElementType());
+                    List<object> elements = new List<object>();
+
+                    while (((BinaryReader)this.m_stream).BaseStream.Position != ((BinaryReader)this.m_stream).BaseStream.Length)
+                    {
+                        object element = Activator.CreateInstance(t.GetElementType());
+                        Read(ref element, littleendian);
+                        elements.Add(element);
+                    }
+
+                    field = Array.CreateInstance(t.GetElementType(), elements.Count);
+                    Array theArray = (Array)field;
+                    for (int i = 0; i < elements.Count; i++)
+                    {
+                        theArray.SetValue(elements[i], i);
+                    }
+                }
+                else
+                {
+					int size = GetArraySize(o, objecttype, arr);
+
+					field = Array.CreateInstance(t.GetElementType(), size);
+
+					Read(ref field, littleendian);
+				}
 
             }
             else
